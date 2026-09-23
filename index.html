@@ -29,12 +29,12 @@
                 <select id="viewMode" onchange="switchViewMode()">
                     <option value="daily">รายวัน (00:00 - 24:00)</option>
                     <option value="monthly">รายเดือน (วันที่ 1 - สิ้นเดือน)</option>
-                    <option value="hourly">รายชั่วโมง (ระบุเวลา From - To)</option>
+                    <option value="hourly" selected>รายชั่วโมง (ระบุเวลา From - To)</option>
                 </select>
             </div>
 
             <!-- รายวัน -->
-            <div id="dailyFilter" class="filter-group active">
+            <div id="dailyFilter" class="filter-group">
                 <label>เลือกวัน:</label>
                 <input type="date" id="selectedDate">
                 <button onclick="applyFilter()">แสดงกราฟ</button>
@@ -48,7 +48,7 @@
             </div>
 
             <!-- รายชั่วโมง -->
-            <div id="hourlyFilter" class="filter-group">
+            <div id="hourlyFilter" class="filter-group active">
                 <label>วันที่:</label>
                 <input type="date" id="hourlyDate">
                 <label>ตั้งแต่:</label>
@@ -78,6 +78,7 @@
     </div>
 
     <script>
+        // ใช้ Web App URL ใหม่ของคุณที่นี่
         const apiURL = 'https://script.google.com/macros/s/AKfycby7FAsTSMwaX8ECVsBSajhHp6HioSV2m5ZVSkcVf9vrZ6I3AT5HfFLOmmffgLnQQCZB/exec';
         let allData = [];
         let myChart = null;
@@ -117,6 +118,15 @@
             applyFilter();
         }
 
+        function parseTimestamp(ts) {
+            if (!ts) return null;
+            let d = new Date(ts);
+            if (isNaN(d.getTime())) {
+                d = new Date(ts.replace(/-/g, '/'));
+            }
+            return isNaN(d.getTime()) ? null : d;
+        }
+
         function applyFilter() {
             const mode = document.getElementById('viewMode').value;
             let filtered = [];
@@ -126,8 +136,10 @@
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    if (!row.timestamp) return false;
-                    return row.timestamp.startsWith(targetDate);
+                    const d = parseTimestamp(row.timestamp);
+                    if (!d) return false;
+                    const rowDateStr = d.toISOString().split('T')[0];
+                    return rowDateStr === targetDate;
                 });
 
             } else if (mode === 'monthly') {
@@ -135,41 +147,40 @@
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
-                    if (!row.timestamp) return false;
-                    return row.timestamp.startsWith(targetMonth);
+                    const d = parseTimestamp(row.timestamp);
+                    if (!d) return false;
+                    const rowMonthStr = d.toISOString().substring(0, 7);
+                    return rowMonthStr === targetMonth;
                 });
 
             } else if (mode === 'hourly') {
-                const targetDate = document.getElementById('hourlyDate').value; // เช่น "2026-09-24"
-                const hFrom = parseInt(document.getElementById('hourFrom').value); // เช่น 0
-                const hTo = parseInt(document.getElementById('hourTo').value);     // เช่น 3
+                const targetDate = document.getElementById('hourlyDate').value;
+                const hFrom = parseInt(document.getElementById('hourFrom').value);
+                const hTo = parseInt(document.getElementById('hourTo').value);
                 
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    if (!row.timestamp) return false;
-                    
-                    // ตรวจสอบว่าขึ้นต้นด้วยวันที่เลือกหรือไม่ (เช่น "2026-09-24 02:15:00")
-                    if (row.timestamp.startsWith(targetDate)) {
-                        // ตัดเอาเฉพาะส่วนของเวลามาตรวจสอบชั่วโมงตรงๆ ป้องกันปัญหา Timezone เพี้ยน
-                        const timePart = row.timestamp.split(' ')[1]; // ได้ "02:15:00"
-                        if (!timePart) return false;
-                        const hour = parseInt(timePart.split(':')[0]); // ได้ตัวเลขชั่วโมง เช่น 2
-                        
+                    const d = parseTimestamp(row.timestamp);
+                    if (!d) return false;
+
+                    const rowDateStr = d.toISOString().split('T')[0];
+                    if (rowDateStr === targetDate) {
+                        const hour = d.getHours();
                         return hour >= hFrom && hour <= hTo;
                     }
                     return false;
                 });
             }
 
-            filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            filtered.sort((a, b) => parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp));
             renderChart(filtered);
         }
 
         function renderChart(data) {
             const labels = data.map(row => {
-                const parts = row.timestamp.split(' ');
-                return parts.length > 1 ? parts[1].substring(0, 5) : row.timestamp; // แสดงผลเป็น HH:mm
+                const d = parseTimestamp(row.timestamp);
+                return d ? d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : row.timestamp;
             });
             
             const colBData = data.map(row => row.colB);
