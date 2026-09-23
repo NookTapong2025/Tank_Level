@@ -54,7 +54,6 @@
                 <input type="date" id="hourlyDate">
                 <label>ตั้งแต่:</label>
                 <select id="hourFrom">
-                    <!-- สร้างตัวเลือก 00 ถึง 23 -->
                     <script>
                         for(let i=0; i<24; i++){
                             let h = i < 10 ? '0' + i : i;
@@ -84,7 +83,6 @@
         let allData = [];
         let myChart = null;
 
-        // กำหนดค่าเริ่มต้นให้ input เป็นวัน/เดือนปัจจุบัน
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
             const currentMonth = today.substring(0, 7);
@@ -100,7 +98,7 @@
             try {
                 const response = await fetch(apiURL);
                 allData = await response.json();
-                applyFilter(); // โหลดข้อมูลและแสดงผลตามค่าเริ่มต้น
+                applyFilter();
             } catch (error) {
                 console.error('Error loading data:', error);
             }
@@ -109,10 +107,8 @@
         function switchViewMode() {
             const mode = document.getElementById('viewMode').value;
             
-            // ซ่อนฟิลเตอร์ทั้งหมดก่อน
             document.querySelectorAll('.filter-group').forEach(el => el.classList.remove('active'));
             
-            // แสดงเฉพาะฟิลเตอร์ที่เลือก
             if (mode === 'daily') {
                 document.getElementById('dailyFilter').classList.add('active');
             } else if (mode === 'monthly') {
@@ -128,7 +124,7 @@
             let filtered = [];
 
             if (mode === 'daily') {
-                const targetDate = document.getElementById('selectedDate').value; // รูปแบบ YYYY-MM-DD
+                const targetDate = document.getElementById('selectedDate').value;
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
@@ -137,7 +133,7 @@
                 });
 
             } else if (mode === 'monthly') {
-                const targetMonth = document.getElementById('selectedMonth').value; // รูปแบบ YYYY-MM
+                const targetMonth = document.getElementById('selectedMonth').value;
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
@@ -146,17 +142,15 @@
                 });
 
             } else if (mode === 'hourly') {
-                const targetDate = document.getElementById('hourlyDate').value; // YYYY-MM-DD
-                const hFrom = document.getElementById('hourFrom').value; // เช่น "08"
-                const hTo = document.getElementById('hourTo').value;     // เช่น "17"
+                const targetDate = document.getElementById('hourlyDate').value;
+                const hFrom = document.getElementById('hourFrom').value;
+                const hTo = document.getElementById('hourTo').value;
                 
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    // ตรวจสอบว่าเป็นวันที่เลือก และเวลาชั่วโมงอยู่ในช่วง From - To
                     if (row.timestamp.startsWith(targetDate)) {
-                        // ดึงเอาเฉพาะชั่วโมงจาก timestamp (เช่น "2026-03-30 14:30:00" -> ได้ "14")
                         const timePart = row.timestamp.split(' ')[1];
                         if (!timePart) return false;
                         const hourStr = timePart.split(':')[0];
