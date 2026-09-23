@@ -78,7 +78,8 @@
     </div>
 
     <script>
-        const apiURL = 'https://script.google.com/macros/s/AKfycbwdh-YQHh5GOmwHGz7wUs-SGYYFmv3c7ojpHF2oE5bGLSRXNBprBCYv-DxSCaY9lSMJ/exec';
+        // ใช้ Web App URL ล่าสุดของคุณ
+        const apiURL = 'https://script.google.com/macros/s/AKfycbx5WsdbCe7Mgw8vQmrRevTJI2FvbuJReZ1HQXfDcKYzYhEK_QrjBIbV6kJZVqQCD5Vq/exec';
         let allData = [];
         let myChart = null;
 
@@ -122,18 +123,17 @@
             let filtered = [];
 
             if (mode === 'daily') {
-                const targetDate = document.getElementById('selectedDate').value; // ได้รูปแบบ "YYYY-MM-DD"
+                const targetDate = document.getElementById('selectedDate').value; // "YYYY-MM-DD"
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    // ดึงเฉพาะตัวอักษร 10 ตัวแรกที่เป็น YYYY-MM-DD มาเทียบตรงๆ ป้องกันปัญหาเรื่องเวลา/Timezone
                     let rowDateStr = row.timestamp.toString().substring(0, 10);
                     return rowDateStr === targetDate;
                 });
 
             } else if (mode === 'monthly') {
-                const targetMonth = document.getElementById('selectedMonth').value; // ได้รูปแบบ "YYYY-MM"
+                const targetMonth = document.getElementById('selectedMonth').value; // "YYYY-MM"
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
@@ -143,7 +143,7 @@
                 });
 
             } else if (mode === 'hourly') {
-                const targetDate = document.getElementById('hourlyDate').value; // "YYYY-MM-DD"
+                const targetDate = document.getElementById('hourlyDate').value;
                 const hFrom = parseInt(document.getElementById('hourFrom').value);
                 const hTo = parseInt(document.getElementById('hourTo').value);
                 
@@ -154,8 +154,7 @@
                     let rowDateStr = row.timestamp.toString().substring(0, 10);
                     
                     if (rowDateStr === targetDate) {
-                        // ดึงเวลาชั่วโมงจากข้อความ timestamp (รองรับทั้งรูปแบบ HH:mm:ss หรือหลังตัว T)
-                        let timePart = row.timestamp.toString().split(/[\sT]/)[1];
+                        let timePart = row.timestamp.toString().split(' ')[1];
                         if (!timePart) return false;
                         let hour = parseInt(timePart.split(':')[0]);
                         return hour >= hFrom && hour <= hTo;
@@ -170,7 +169,7 @@
         function renderChart(data) {
             const labels = data.map(row => {
                 if (!row.timestamp) return '';
-                let parts = row.timestamp.toString().split(/[\sT]/);
+                let parts = row.timestamp.toString().split(' ');
                 return parts.length > 1 ? parts[1].substring(0, 8) : row.timestamp;
             });
             
