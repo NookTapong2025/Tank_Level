@@ -78,7 +78,7 @@
     </div>
 
     <script>
-        const apiURL = 'https://script.google.com/macros/s/AKfycby7FAsTSMwaX8ECVsBSajhHp6HioSV2m5ZVSkcVf9vrZ6I3AT5HfFLOmmffgLnQQCZB/exec';
+        const apiURL = 'https://script.google.com/macros/s/AKfycbwA6N6rXkds_PgmaBdvzGGa29aqwdVHhVl3_dnMNuPTMY7m-_u3MWNWnzCTVJbOPbLq/exec';
         let allData = [];
         let myChart = null;
 
@@ -122,18 +122,17 @@
             let filtered = [];
 
             if (mode === 'daily') {
-                const targetDate = document.getElementById('selectedDate').value; // YYYY-MM-DD
+                const targetDate = document.getElementById('selectedDate').value;
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    // แปลง timestamp ใน Sheet เป็นรูปแบบวันที่ YYYY-MM-DD เพื่อเทียบให้ตรงกัน
                     const rowDate = new Date(row.timestamp).toISOString().split('T')[0];
                     return rowDate === targetDate;
                 });
 
             } else if (mode === 'monthly') {
-                const targetMonth = document.getElementById('selectedMonth').value; // YYYY-MM
+                const targetMonth = document.getElementById('selectedMonth').value;
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
@@ -162,16 +161,16 @@
                 });
             }
 
-            // เรียงลำดับข้อมูลจากเวลาเก่าไปใหม่เสมอ
             filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
             renderChart(filtered);
         }
 
         function renderChart(data) {
+            // แปลงรูปแบบ timestamp ให้แสดงเฉพาะเวลา (เช่น 18:11) หรือ วันที่+เวลา แบบอ่านง่าย
             const labels = data.map(row => {
                 const dateObj = new Date(row.timestamp);
-                return dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                // แสดงผลเฉพาะ ชั่วโมง:นาที (เช่น 18:11) เพื่อให้อ่านง่ายและไม่แน่นเกินไป
+                return dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
             });
             
             const colBData = data.map(row => row.colB);
