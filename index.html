@@ -58,31 +58,49 @@
             const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
             if (!targetDate) return;
 
-            // ค้นหาข้อมูลโดยยืดหยุ่น ตรวจสอบจากปี เดือน และวัน
+            // 1. กรองข้อมูลเฉพาะวันที่เลือก
             let filtered = allData.filter(row => {
                 if (!row.timestamp) return false;
                 let tsStr = row.timestamp.toString();
-                // แยกเอาเฉพาะส่วนที่เป็น YYYY-MM-DD มาเทียบ
                 let match = tsStr.match(/\d{4}-\d{2}-\d{2}/);
-                if (match) {
-                    return match[0] === targetDate;
-                }
-                return tsStr.includes(targetDate);
+                return match ? match[0] === targetDate : tsStr.includes(targetDate);
             });
 
-            // ถ้าไม่พบข้อมูลแบบตรงเป๊ะ ให้ดึงข้อมูลทั้งหมดล่าสุดมาแสดงแทนเพื่อไม่ให้กราฟว่างเปล่า
+            // ถ้าไม่มีข้อมูลตรงวัน ให้ดึงชุดล่าสุดมาแสดงสำรอง
             if (filtered.length === 0 && allData.length > 0) {
-                filtered = allData.slice(-100); 
+                filtered = allData.slice(-200); 
             }
 
-            // เรียงลำดับเวลาจากเช้าไปดึก
+            // 2. เรียงลำดับจากเช้าไปดึก
             filtered.sort((a, b) => {
                 let timeA = a.timestamp.toString().split(/[\sT]/)[1] || '';
                 let timeB = b.timestamp.toString().split(/[\sT]/)[1] || '';
                 return timeA.localeCompare(timeB);
             });
 
-            renderChart(filtered);
+            // 3. กรองข้อมูลให้เหลือช่วงเวลาละ 1 ค่า ทุกๆ 15 นาที
+            let sampledData = [];
+            let lastSavedMinutes = -1;
+
+            filtered.forEach(row => {
+                let timePart = row.timestamp.toString().split(/[\sT]/)[1];
+                if (timePart) {
+                    let timeSub = timePart.split(':');
+                    let hour = parseInt(timeSub[0]) || 0;
+                    let minute = parseInt(timeSub[1]) || 0;
+                    
+                    // แปลงเวลาเป็นนาทีรวมตั้งแต่เที่ยงคืน แล้วปัดลงให้ลงล็อกทุกๆ 15 นาที (0, 15, 30, 45)
+                    let totalMinutes = (hour * 60) + minute;
+                    let bucket = Math.floor(totalMinutes / 15);
+
+                    if (bucket !== lastSavedMinutes) {
+                        sampledData.push(row);
+                        lastSavedMinutes = bucket;
+                    }
+                }
+            });
+
+            renderChart(sampledData);
         }
 
         function renderChart(data) {
@@ -90,7 +108,7 @@
                 if (!row.timestamp) return '';
                 let str = row.timestamp.toString();
                 let parts = str.split(/[\sT]/);
-                return parts.length > 1 ? parts[1].substring(0, 8) : str;
+                return parts.length > 1 ? parts[1].substring(0, 5) : str; // แสดงผลเป็น HH:mm เพื่อให้อ่านง่าย
             });
             
             const colBData = data.map(row => row.colB);
@@ -131,7 +149,7 @@
                         y: { beginAtZero: false },
                         x: {
                             ticks: {
-                                maxTicksLimit: 15,
+                                maxTicksLimit: 20,
                                 autoSkip: true
                             }
                         }
