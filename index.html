@@ -55,7 +55,7 @@
         }
 
         function applyFilter() {
-            const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
+            const targetDate = document.getElementById('selectedDate').value;
             if (!targetDate) return;
 
             let filtered = allData.filter(row => {
@@ -103,8 +103,8 @@
 
         function renderChart(data) {
             const labels = data.map(row => row.displayTime || '');
-            const colBData = data.map(row => row.colB);
-            const colCData = data.map(row => row.colC);
+            const colBData = data.map(row => parseFloat(row.colB) || 0);
+            const colCData = data.map(row => parseFloat(row.colC) || 0);
 
             const ctx = document.getElementById('waterChart').getContext('2d');
 
@@ -118,7 +118,7 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Water Level (Col B)',
+                            label: 'Water Level (Cm)',
                             data: colBData,
                             borderColor: 'rgba(54, 162, 235, 1)',
                             backgroundColor: 'rgba(54, 162, 235, 0.2)',
@@ -126,10 +126,10 @@
                             tension: 0.1,
                             pointRadius: 4,
                             pointHoverRadius: 7,
-                            yAxisID: 'y' // ใช้สเกลแกน Y ด้านซ้าย
+                            yAxisID: 'y'
                         },
                         {
-                            label: 'Temperature/Value (Col C)',
+                            label: 'Distance (Cm)',
                             data: colCData,
                             borderColor: 'rgba(255, 99, 132, 1)',
                             backgroundColor: 'rgba(255, 99, 132, 0.2)',
@@ -137,7 +137,7 @@
                             tension: 0.1,
                             pointRadius: 4,
                             pointHoverRadius: 7,
-                            yAxisID: 'y1' // แยกไปใช้สเกลแกน Y ด้านขวาอิสระ
+                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -161,29 +161,25 @@
                                 autoSkip: true
                             }
                         },
-                        // ตั้งค่าแกน Y ด้านซ้าย (สำหรับ Water Level)
                         y: {
                             type: 'linear',
                             display: true,
                             position: 'left',
-                            beginAtZero: false,
                             title: {
                                 display: true,
-                                text: 'Water Level'
+                                text: 'Water Level (Cm)'
                             }
                         },
-                        // ตั้งค่าแกน Y ด้านขวา (สำหรับ Temperature/Value คอลัมน์ C)
                         y1: {
                             type: 'linear',
                             display: true,
                             position: 'right',
-                            beginAtZero: false,
                             grid: {
-                                drawOnChartArea: false // ป้องกันเส้นตารางทับซ้อนกันรกตา
+                                drawOnChartArea: false
                             },
                             title: {
                                 display: true,
-                                text: 'Temperature / Value'
+                                text: 'Distance (Cm)'
                             }
                         }
                     }
