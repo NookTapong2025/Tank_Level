@@ -23,7 +23,6 @@
     <div class="container">
         <h2>Water Tank Monitoring Dashboard</h2>
         
-        <!-- เมนูหลักเลือกประเภทการดู -->
         <div class="controls">
             <div>
                 <label for="viewMode"><strong>โหมดการแสดงผล:</strong> </label>
@@ -34,21 +33,21 @@
                 </select>
             </div>
 
-            <!-- 1. ฟอร์มเลือกสำหรับรายวัน -->
+            <!-- รายวัน -->
             <div id="dailyFilter" class="filter-group active">
                 <label>เลือกวัน:</label>
                 <input type="date" id="selectedDate">
                 <button onclick="applyFilter()">แสดงกราฟ</button>
             </div>
 
-            <!-- 2. ฟอร์มเลือกสำหรับรายเดือน -->
+            <!-- รายเดือน -->
             <div id="monthlyFilter" class="filter-group">
                 <label>เลือกเดือน:</label>
                 <input type="month" id="selectedMonth">
                 <button onclick="applyFilter()">แสดงกราฟ</button>
             </div>
 
-            <!-- 3. ฟอร์มเลือกสำหรับรายชั่วโมง -->
+            <!-- รายชั่วโมง -->
             <div id="hourlyFilter" class="filter-group">
                 <label>วันที่:</label>
                 <input type="date" id="hourlyDate">
@@ -79,7 +78,7 @@
     </div>
 
     <script>
-        const apiURL = 'https://script.google.com/macros/s/AKfycbziy31VPeGdCn9Knw0XDuEXI3VGCSmpyRFOtLqJXIol7BNoRb2voGo1hsclfAcgD-SX/exec';
+        const apiURL = 'https://script.google.com/macros/s/AKfycby7FAsTSMwaX8ECVsBSajhHp6HioSV2m5ZVSkcVf9vrZ6I3AT5HfFLOmmffgLnQQCZB/exec';
         let allData = [];
         let myChart = null;
 
@@ -123,21 +122,24 @@
             let filtered = [];
 
             if (mode === 'daily') {
-                const targetDate = document.getElementById('selectedDate').value;
+                const targetDate = document.getElementById('selectedDate').value; // YYYY-MM-DD
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    return row.timestamp.startsWith(targetDate);
+                    // แปลง timestamp ใน Sheet เป็นรูปแบบวันที่ YYYY-MM-DD เพื่อเทียบให้ตรงกัน
+                    const rowDate = new Date(row.timestamp).toISOString().split('T')[0];
+                    return rowDate === targetDate;
                 });
 
             } else if (mode === 'monthly') {
-                const targetMonth = document.getElementById('selectedMonth').value;
+                const targetMonth = document.getElementById('selectedMonth').value; // YYYY-MM
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    return row.timestamp.startsWith(targetMonth);
+                    const rowMonth = new Date(row.timestamp).toISOString().substring(0, 7);
+                    return rowMonth === targetMonth;
                 });
 
             } else if (mode === 'hourly') {
@@ -149,27 +151,27 @@
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    if (row.timestamp.startsWith(targetDate)) {
-                        const timePart = row.timestamp.split(' ')[1];
-                        if (!timePart) return false;
-                        const hourStr = timePart.split(':')[0];
-                        return hourStr >= hFrom && hourStr <= hTo;
+                    const rowDateObj = new Date(row.timestamp);
+                    const rowDateStr = rowDateObj.toISOString().split('T')[0];
+                    
+                    if (rowDateStr === targetDate) {
+                        const hour = rowDateObj.getHours();
+                        return hour >= parseInt(hFrom) && hour <= parseInt(hTo);
                     }
                     return false;
                 });
             }
 
-            // จัดเรียงข้อมูลจากเวลาเก่าไปใหม่เสมอ
+            // เรียงลำดับข้อมูลจากเวลาเก่าไปใหม่เสมอ
             filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
             renderChart(filtered);
         }
 
         function renderChart(data) {
-            // ตัดข้อความแกน X ให้แสดงเฉพาะ เวลา (HH:mm:ss) หรือวันที่+เวลาตามความเหมาะสม
             const labels = data.map(row => {
-                const parts = row.timestamp.split(' ');
-                return parts.length > 1 ? parts[1] : row.timestamp; // แสดงเฉพาะเวลา ชั่วโมง:นาที:วินาที
+                const dateObj = new Date(row.timestamp);
+                return dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             });
             
             const colBData = data.map(row => row.colB);
