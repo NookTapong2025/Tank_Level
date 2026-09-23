@@ -39,8 +39,8 @@
         let myChart = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            // ตั้งค่าเริ่มต้นเป็นวันที่ 22/09/2026 หรือวันที่ปัจจุบัน
-            document.getElementById('selectedDate').value = '2026-09-22';
+            // ตั้งค่าวันที่เริ่มต้นเป็น 2026-09-23 ตามที่คุณเลือกใช้งานอยู่
+            document.getElementById('selectedDate').value = '2026-09-23';
             loadData();
         });
 
@@ -55,16 +55,17 @@
         }
 
         function applyFilter() {
-            const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
+            const targetDate = document.getElementById('selectedDate').value; // ได้รูปแบบ "YYYY-MM-DD"
             if (!targetDate) return;
 
-            // กรองข้อมูลเฉพาะวันที่เลือก
+            // กรองข้อมูลโดยดึงข้อความ 10 ตัวแรกของ timestamp (ซึ่งก็คือ YYYY-MM-DD) มาเทียบโดยตรง
             let filtered = allData.filter(row => {
                 if (!row.timestamp) return false;
-                return row.timestamp.toString().includes(targetDate);
+                let rowDate = row.timestamp.toString().substring(0, 10);
+                return rowDate === targetDate;
             });
 
-            // เรียงลำดับข้อมูลจากเวลาเริ่มต้น (00:00) ไปจนถึงดึก (23:59)
+            // เรียงลำดับข้อมูลจากเวลาเริ่มต้นเช้าไปดึก (00:00 ถึง 23:59)
             filtered.sort((a, b) => {
                 let timeA = a.timestamp.toString().split(/[\sT]/)[1] || '';
                 let timeB = b.timestamp.toString().split(/[\sT]/)[1] || '';
@@ -120,7 +121,7 @@
                         y: { beginAtZero: false },
                         x: {
                             ticks: {
-                                maxTicksLimit: 15, // เพิ่มจำนวนหมุดบนแกน X ให้แสดงผลถี่และครอบคลุมขึ้น
+                                maxTicksLimit: 15,
                                 autoSkip: true
                             }
                         }
