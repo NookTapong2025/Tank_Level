@@ -78,7 +78,6 @@
     </div>
 
     <script>
-        // ใช้ Web App URL ล่าสุด
         const apiURL = 'https://script.google.com/macros/s/AKfycbwdh-YQHh5GOmwHGz7wUs-SGYYFmv3c7ojpHF2oE5bGLSRXNBprBCYv-DxSCaY9lSMJ/exec';
         let allData = [];
         let myChart = null;
@@ -118,97 +117,61 @@
             applyFilter();
         }
 
-        // ฟังก์ชันช่วยดึงวันที่จากข้อความ Timestamp แบบแม่นยำ รองรับทุกรูปแบบ
-        function parseTimestampInfo(ts) {
-            if (!ts) return null;
-            let str = ts.toString().trim();
-            
-            // ค้นหารูปแบบ YYYY-MM-DD และ HH:mm:ss ด้วย RegEx
-            let match = str.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
-            if (match) {
-                return {
-                    dateStr: `${match[1]}-${match[2]}-${match[3]}`, // YYYY-MM-DD
-                    monthStr: `${match[1]}-${match[2]}`,           // YYYY-MM
-                    hour: parseInt(match[4]),
-                    timeStr: `${match[4]}:${match[5]}:${match[6]}`,
-                    fullDate: new Date(str.replace(/-/g, '/'))
-                };
-            }
-            
-            let d = new Date(str.replace(/-/g, '/'));
-            if (!isNaN(d.getTime())) {
-                let y = d.getFullYear();
-                let m = String(d.getMonth() + 1).padStart(2, '0');
-                let day = String(d.getDate()).padStart(2, '0');
-                let h = String(d.getHours()).padStart(2, '0');
-                let min = String(d.getMinutes()).padStart(2, '0');
-                let s = String(d.getSeconds()).padStart(2, '0');
-                return {
-                    dateStr: `${y}-${m}-${day}`,
-                    monthStr: `${y}-${m}`,
-                    hour: d.getHours(),
-                    timeStr: `${h}:${min}:${s}`,
-                    fullDate: d
-                };
-            }
-            return null;
-        }
-
         function applyFilter() {
             const mode = document.getElementById('viewMode').value;
             let filtered = [];
 
             if (mode === 'daily') {
-                const targetDate = document.getElementById('selectedDate').value; // YYYY-MM-DD
+                const targetDate = document.getElementById('selectedDate').value; // ได้รูปแบบ "YYYY-MM-DD"
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    let info = parseTimestampInfo(row.timestamp);
-                    if (!info) return false;
-                    return info.dateStr === targetDate;
+                    if (!row.timestamp) return false;
+                    // ดึงเฉพาะตัวอักษร 10 ตัวแรกที่เป็น YYYY-MM-DD มาเทียบตรงๆ ป้องกันปัญหาเรื่องเวลา/Timezone
+                    let rowDateStr = row.timestamp.toString().substring(0, 10);
+                    return rowDateStr === targetDate;
                 });
 
             } else if (mode === 'monthly') {
-                const targetMonth = document.getElementById('selectedMonth').value; // YYYY-MM
+                const targetMonth = document.getElementById('selectedMonth').value; // ได้รูปแบบ "YYYY-MM"
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
-                    let info = parseTimestampInfo(row.timestamp);
-                    if (!info) return false;
-                    return info.monthStr === targetMonth;
+                    if (!row.timestamp) return false;
+                    let rowMonthStr = row.timestamp.toString().substring(0, 7);
+                    return rowMonthStr === targetMonth;
                 });
 
             } else if (mode === 'hourly') {
-                const targetDate = document.getElementById('hourlyDate').value;
+                const targetDate = document.getElementById('hourlyDate').value; // "YYYY-MM-DD"
                 const hFrom = parseInt(document.getElementById('hourFrom').value);
                 const hTo = parseInt(document.getElementById('hourTo').value);
                 
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    let info = parseTimestampInfo(row.timestamp);
-                    if (!info) return false;
-                    return info.dateStr === targetDate && info.hour >= hFrom && info.hour <= hTo;
+                    if (!row.timestamp) return false;
+                    let rowDateStr = row.timestamp.toString().substring(0, 10);
+                    
+                    if (rowDateStr === targetDate) {
+                        // ดึงเวลาชั่วโมงจากข้อความ timestamp (รองรับทั้งรูปแบบ HH:mm:ss หรือหลังตัว T)
+                        let timePart = row.timestamp.toString().split(/[\sT]/)[1];
+                        if (!timePart) return false;
+                        let hour = parseInt(timePart.split(':')[0]);
+                        return hour >= hFrom && hour <= hTo;
+                    }
+                    return false;
                 });
             }
-
-            // เรียงลำดับข้อมูลจากเก่าไปใหม่
-            filtered.sort((a, b) => {
-                let infoA = parseTimestampInfo(a.timestamp);
-                let infoB = parseTimestampInfo(b.timestamp);
-                if (infoA && infoB) {
-                    return infoA.fullDate - infoB.fullDate;
-                }
-                return 0;
-            });
 
             renderChart(filtered);
         }
 
         function renderChart(data) {
             const labels = data.map(row => {
-                let info = parseTimestampInfo(row.timestamp);
-                return info ? info.timeStr : row.timestamp;
+                if (!row.timestamp) return '';
+                let parts = row.timestamp.toString().split(/[\sT]/);
+                return parts.length > 1 ? parts[1].substring(0, 8) : row.timestamp;
             });
             
             const colBData = data.map(row => row.colB);
