@@ -78,7 +78,6 @@
     </div>
 
     <script>
-        // ใช้ Web App URL ล่าสุดของคุณ
         const apiURL = 'https://script.google.com/macros/s/AKfycbx5WsdbCe7Mgw8vQmrRevTJI2FvbuJReZ1HQXfDcKYzYhEK_QrjBIbV6kJZVqQCD5Vq/exec';
         let allData = [];
         let myChart = null;
@@ -118,6 +117,16 @@
             applyFilter();
         }
 
+        // ฟังก์ชันแปลงวันที่รองรับทั้งแบบ String และ Date Object 
+        function parseToDate(ts) {
+            if (!ts) return null;
+            let d = new Date(ts);
+            if (isNaN(d.getTime())) {
+                return null;
+            }
+            return d;
+        }
+
         function applyFilter() {
             const mode = document.getElementById('viewMode').value;
             let filtered = [];
@@ -127,8 +136,12 @@
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    if (!row.timestamp) return false;
-                    let rowDateStr = row.timestamp.toString().substring(0, 10);
+                    let d = parseToDate(row.timestamp);
+                    if (!d) return false;
+                    let y = d.getFullYear();
+                    let m = String(d.getMonth() + 1).padStart(2, '0');
+                    let day = String(d.getDate()).padStart(2, '0');
+                    let rowDateStr = `${y}-${m}-${day}`;
                     return rowDateStr === targetDate;
                 });
 
@@ -137,8 +150,11 @@
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
-                    if (!row.timestamp) return false;
-                    let rowMonthStr = row.timestamp.toString().substring(0, 7);
+                    let d = parseToDate(row.timestamp);
+                    if (!d) return false;
+                    let y = d.getFullYear();
+                    let m = String(d.getMonth() + 1).padStart(2, '0');
+                    let rowMonthStr = `${y}-${m}`;
                     return rowMonthStr === targetMonth;
                 });
 
@@ -150,27 +166,35 @@
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    if (!row.timestamp) return false;
-                    let rowDateStr = row.timestamp.toString().substring(0, 10);
+                    let d = parseToDate(row.timestamp);
+                    if (!d) return false;
+                    let y = d.getFullYear();
+                    let m = String(d.getMonth() + 1).padStart(2, '0');
+                    let day = String(d.getDate()).padStart(2, '0');
+                    let rowDateStr = `${y}-${m}-${day}`;
                     
                     if (rowDateStr === targetDate) {
-                        let timePart = row.timestamp.toString().split(' ')[1];
-                        if (!timePart) return false;
-                        let hour = parseInt(timePart.split(':')[0]);
+                        let hour = d.getHours();
                         return hour >= hFrom && hour <= hTo;
                     }
                     return false;
                 });
             }
 
+            // เรียงลำดับจากเก่าไปใหม่
+            filtered.sort((a, b) => parseToDate(a.timestamp) - parseToDate(b.timestamp));
+
             renderChart(filtered);
         }
 
         function renderChart(data) {
             const labels = data.map(row => {
-                if (!row.timestamp) return '';
-                let parts = row.timestamp.toString().split(' ');
-                return parts.length > 1 ? parts[1].substring(0, 8) : row.timestamp;
+                let d = parseToDate(row.timestamp);
+                if (!d) return row.timestamp;
+                let h = String(d.getHours()).padStart(2, '0');
+                let m = String(d.getMinutes()).padStart(2, '0');
+                let s = String(d.getSeconds()).padStart(2, '0');
+                return `${h}:${m}:${s}`;
             });
             
             const colBData = data.map(row => row.colB);
