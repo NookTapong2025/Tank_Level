@@ -66,9 +66,8 @@
                 return match ? match[0] === targetDate : tsStr.includes(targetDate);
             });
 
-            // ถ้าไม่มีข้อมูลตรงวัน ให้ดึงชุดล่าสุดมาแสดงสำรอง
             if (filtered.length === 0 && allData.length > 0) {
-                filtered = allData.slice(-200); 
+                filtered = allData.slice(-300); 
             }
 
             // 2. เรียงลำดับจากเช้าไปดึก
@@ -78,9 +77,9 @@
                 return timeA.localeCompare(timeB);
             });
 
-            // 3. กรองข้อมูลให้เหลือช่วงเวลาละ 1 ค่า ทุกๆ 15 นาที
+            // 3. จัดกลุ่มข้อมูลให้เหลือ 1 ค่าต่อทุกๆ ช่วง 15 นาทีเป๊ะๆ (นาทีที่ 0, 15, 30, 45)
             let sampledData = [];
-            let lastSavedMinutes = -1;
+            let lastBucketKey = "";
 
             filtered.forEach(row => {
                 let timePart = row.timestamp.toString().split(/[\sT]/)[1];
@@ -89,13 +88,21 @@
                     let hour = parseInt(timeSub[0]) || 0;
                     let minute = parseInt(timeSub[1]) || 0;
                     
-                    // แปลงเวลาเป็นนาทีรวมตั้งแต่เที่ยงคืน แล้วปัดลงให้ลงล็อกทุกๆ 15 นาที (0, 15, 30, 45)
-                    let totalMinutes = (hour * 60) + minute;
-                    let bucket = Math.floor(totalMinutes / 15);
+                    // ปัดเศษนาทีลงให้ลงล็อก 15 นาที (เช่น 07, 12 จะถูกจัดเข้ากลุ่ม 00 เหมือนกัน)
+                    let roundedMinute = Math.floor(minute / 15) * 15;
+                    let hStr = hour < 10 ? '0' + hour : hour;
+                    let mStr = roundedMinute < 10 ? '0' + roundedMinute : roundedMinute;
+                    
+                    let bucketKey = `${hStr}:${mStr}`;
 
-                    if (bucket !== lastSavedMinutes) {
-                        sampledData.push(row);
-                        lastSavedMinutes = bucket;
+                    // เก็บข้อมูลตัวแรกของแต่ละช่วง 15 นาที
+                    if (bucketKey !== lastBucketKey) {
+                        sampledData.push({
+                            ...row,
+                            // กำหนด Label เวลาให้แสดงเป็นช่วง 15 นาทีสวยๆ (เช่น 00:00, 00:15)
+                            displayTime: `${bucketKey}:00`
+                        });
+                        lastBucketKey = bucketKey;
                     }
                 }
             });
@@ -104,13 +111,7 @@
         }
 
         function renderChart(data) {
-            const labels = data.map(row => {
-                if (!row.timestamp) return '';
-                let str = row.timestamp.toString();
-                let parts = str.split(/[\sT]/);
-                return parts.length > 1 ? parts[1].substring(0, 5) : str; // แสดงผลเป็น HH:mm เพื่อให้อ่านง่าย
-            });
-            
+            const labels = data.map(row => row.displayTime || '');
             const colBData = data.map(row => row.colB);
             const colCData = data.map(row => row.colC);
 
@@ -149,7 +150,7 @@
                         y: { beginAtZero: false },
                         x: {
                             ticks: {
-                                maxTicksLimit: 20,
+                                maxTicksLimit: 24, // ให้แสดงป้ายชื่อบนแกน X ถี่ขึ้นเพื่อให้เห็นช่วงเวลา 15 นาทีชัดเจน
                                 autoSkip: true
                             }
                         }
