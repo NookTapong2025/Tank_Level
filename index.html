@@ -13,8 +13,7 @@
         select, input, button { padding: 8px 12px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc; }
         button { background: #007bff; color: white; cursor: pointer; border: none; }
         button:hover { background: #0056b3; }
-        .filter-group { display: none; gap: 10px; align-items: center; }
-        .filter-group.active { display: flex; }
+        .filter-group { display: flex; gap: 10px; align-items: center; }
         canvas { width: 100% !important; height: 400px !important; }
     </style>
 </head>
@@ -24,16 +23,7 @@
         <h2>Water Tank Monitoring Dashboard</h2>
         
         <div class="controls">
-            <div>
-                <label for="viewMode"><strong>โหมดการแสดงผล:</strong> </label>
-                <select id="viewMode" onchange="switchViewMode()">
-                    <option value="all">แสดงข้อมูลทั้งหมดล่าสุด</option>
-                    <option value="daily">รายวัน (ตามวันที่เลือก)</option>
-                </select>
-            </div>
-
-            <!-- รายวัน -->
-            <div id="dailyFilter" class="filter-group">
+            <div class="filter-group">
                 <label>เลือกวัน:</label>
                 <input type="date" id="selectedDate">
                 <button onclick="applyFilter()">แสดงกราฟ</button>
@@ -44,7 +34,8 @@
     </div>
 
     <script>
-        const apiURL = 'https://script.google.com/macros/s/AKfycbx5WsdbCe7Mgw8vQmrRevTJI2FvbuJReZ1HQXfDcKYzYhEK_QrjBIbV6kJZVqQCD5Vq/exec';
+        // ใช้ Web App URL ล่าสุดของคุณ
+        const apiURL = 'https://script.google.com/macros/s/AKfycbxU99FsH8Mz0yKKkld1OJofu6rmhkEME6QqNmbQ7_sig4rC6JozX4eL-bJJJwHCDHXE/exec';
         let allData = [];
         let myChart = null;
 
@@ -64,30 +55,17 @@
             }
         }
 
-        function switchViewMode() {
-            const mode = document.getElementById('viewMode').value;
-            if (mode === 'daily') {
-                document.getElementById('dailyFilter').classList.add('active');
-            } else {
-                document.getElementById('dailyFilter').classList.remove('active');
-            }
-            applyFilter();
-        }
-
         function applyFilter() {
-            const mode = document.getElementById('viewMode').value;
-            let filtered = allData;
+            const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
+            if (!targetDate) return;
 
-            if (mode === 'daily') {
-                const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
-                if (targetDate) {
-                    filtered = allData.filter(row => {
-                        if (!row.timestamp) return false;
-                        // ตรวจสอบว่าในข้อความ timestamp มีวันที่ตรงกับที่เลือกหรือไม่
-                        return row.timestamp.toString().includes(targetDate);
-                    });
-                }
-            }
+            // กรองข้อมูลเฉพาะวันที่เลือก และจัดเรียงจากเวลาเช้าไปดึก (00:00 ถึง 23:59)
+            let filtered = allData.filter(row => {
+                if (!row.timestamp) return false;
+                return row.timestamp.toString().includes(targetDate);
+            });
+
+            filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
             renderChart(filtered);
         }
