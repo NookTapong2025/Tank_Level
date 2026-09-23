@@ -58,7 +58,6 @@
             const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
             if (!targetDate) return;
 
-            // 1. กรองข้อมูลเฉพาะวันที่เลือก
             let filtered = allData.filter(row => {
                 if (!row.timestamp) return false;
                 let tsStr = row.timestamp.toString();
@@ -66,19 +65,16 @@
                 return match ? match[0] === targetDate : tsStr.includes(targetDate);
             });
 
-            // ป้องกันกราฟหาย: หากวันที่เลือกไม่มีข้อมูล ให้ดึง 200 รายการล่าสุดมาแสดงแทน
             if (filtered.length === 0 && allData.length > 0) {
                 filtered = allData.slice(-200);
             }
 
-            // 2. เรียงลำดับจากเช้าไปดึก
             filtered.sort((a, b) => {
                 let timeA = a.timestamp.toString().split(/[\sT]/)[1] || '';
                 let timeB = b.timestamp.toString().split(/[\sT]/)[1] || '';
                 return timeA.localeCompare(timeB);
             });
 
-            // 3. จัดกลุ่มข้อมูลล็อกช่วงเวลาทุกๆ 15 นาทีเป๊ะๆ (00, 15, 30, 45)
             let sampledMap = new Map();
 
             filtered.forEach(row => {
@@ -127,7 +123,9 @@
                             borderColor: 'rgba(54, 162, 235, 1)',
                             backgroundColor: 'rgba(54, 162, 235, 0.2)',
                             borderWidth: 2,
-                            tension: 0.1
+                            tension: 0.1,
+                            pointRadius: 4,       // ขยายขนาดจุดให้เมาส์ชี้ได้ง่ายขึ้น
+                            pointHoverRadius: 7   // ขยายขนาดจุดเมื่อเอาเมาส์ไปชี้
                         },
                         {
                             label: 'Temperature/Value (Col C)',
@@ -135,12 +133,23 @@
                             borderColor: 'rgba(255, 99, 132, 1)',
                             backgroundColor: 'rgba(255, 99, 132, 0.2)',
                             borderWidth: 2,
-                            tension: 0.1
+                            tension: 0.1,
+                            pointRadius: 4,
+                            pointHoverRadius: 7
                         }
                     ]
                 },
                 options: {
                     responsive: true,
+                    interaction: {
+                        mode: 'index',       // แสดงข้อมูลของทั้งสองเส้นพร้อมกันเมื่อชี้ในแนวตั้งเดียวกัน
+                        intersect: false     // ไม่จำเป็นต้องชี้โดนจุดเป๊ะๆ ก็แสดงป๊อปอัปได้
+                    },
+                    plugins: {
+                        tooltip: {
+                            enabled: true    // เปิดใช้งาน Tooltip ป๊อปอัป
+                        }
+                    },
                     scales: {
                         y: { beginAtZero: false },
                         x: {
