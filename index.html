@@ -106,7 +106,6 @@
 
         function switchViewMode() {
             const mode = document.getElementById('viewMode').value;
-            
             document.querySelectorAll('.filter-group').forEach(el => el.classList.remove('active'));
             
             if (mode === 'daily') {
@@ -160,11 +159,19 @@
                 });
             }
 
+            // จัดเรียงข้อมูลจากเวลาเก่าไปใหม่เสมอ
+            filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
             renderChart(filtered);
         }
 
         function renderChart(data) {
-            const labels = data.map(row => row.timestamp);
+            // ตัดข้อความแกน X ให้แสดงเฉพาะ เวลา (HH:mm:ss) หรือวันที่+เวลาตามความเหมาะสม
+            const labels = data.map(row => {
+                const parts = row.timestamp.split(' ');
+                return parts.length > 1 ? parts[1] : row.timestamp; // แสดงเฉพาะเวลา ชั่วโมง:นาที:วินาที
+            });
+            
             const colBData = data.map(row => row.colB);
             const colCData = data.map(row => row.colC);
 
