@@ -78,8 +78,8 @@
     </div>
 
     <script>
-        // ใช้ Web App URL ใหม่ของคุณที่นี่
-        const apiURL = 'https://script.google.com/macros/s/AKfycby7FAsTSMwaX8ECVsBSajhHp6HioSV2m5ZVSkcVf9vrZ6I3AT5HfFLOmmffgLnQQCZB/exec';
+        // ใช้ Web App URL ล่าสุดที่คุณเพิ่ง Deploy
+        const apiURL = 'https://script.google.com/macros/s/AKfycbwdh-YQHh5GOmwHGz7wUs-SGYYFmv3c7ojpHF2oE5bGLSRXNBprBCYv-DxSCaY9lSMJ/exec';
         let allData = [];
         let myChart = null;
 
@@ -179,8 +179,15 @@
 
         function renderChart(data) {
             const labels = data.map(row => {
-                const d = parseTimestamp(row.timestamp);
-                return d ? d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : row.timestamp;
+                if (!row.timestamp) return '';
+                if (row.timestamp.includes('T')) {
+                    const timePart = row.timestamp.split('T')[1];
+                    return timePart ? timePart.substring(0, 8) : row.timestamp;
+                } else if (row.timestamp.includes(' ')) {
+                    const timePart = row.timestamp.split(' ')[1];
+                    return timePart ? timePart.substring(0, 8) : row.timestamp;
+                }
+                return row.timestamp;
             });
             
             const colBData = data.map(row => row.colB);
@@ -218,7 +225,13 @@
                 options: {
                     responsive: true,
                     scales: {
-                        y: { beginAtZero: false }
+                        y: { beginAtZero: false },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 12, // จำกัดจำนวนป้ายชื่อไม่ให้แน่นเกินไป
+                                autoSkip: true
+                            }
+                        }
                     }
                 }
             });
