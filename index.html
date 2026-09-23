@@ -34,14 +34,13 @@
     </div>
 
     <script>
-        // ใช้ Web App URL ล่าสุดของคุณ
         const apiURL = 'https://script.google.com/macros/s/AKfycbxU99FsH8Mz0yKKkld1OJofu6rmhkEME6QqNmbQ7_sig4rC6JozX4eL-bJJJwHCDHXE/exec';
         let allData = [];
         let myChart = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('selectedDate').value = today;
+            // ตั้งค่าเริ่มต้นเป็นวันที่ 22/09/2026 หรือวันที่ปัจจุบัน
+            document.getElementById('selectedDate').value = '2026-09-22';
             loadData();
         });
 
@@ -59,13 +58,18 @@
             const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
             if (!targetDate) return;
 
-            // กรองข้อมูลเฉพาะวันที่เลือก และจัดเรียงจากเวลาเช้าไปดึก (00:00 ถึง 23:59)
+            // กรองข้อมูลเฉพาะวันที่เลือก
             let filtered = allData.filter(row => {
                 if (!row.timestamp) return false;
                 return row.timestamp.toString().includes(targetDate);
             });
 
-            filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            // เรียงลำดับข้อมูลจากเวลาเริ่มต้น (00:00) ไปจนถึงดึก (23:59)
+            filtered.sort((a, b) => {
+                let timeA = a.timestamp.toString().split(/[\sT]/)[1] || '';
+                let timeB = b.timestamp.toString().split(/[\sT]/)[1] || '';
+                return timeA.localeCompare(timeB);
+            });
 
             renderChart(filtered);
         }
@@ -116,7 +120,7 @@
                         y: { beginAtZero: false },
                         x: {
                             ticks: {
-                                maxTicksLimit: 12,
+                                maxTicksLimit: 15, // เพิ่มจำนวนหมุดบนแกน X ให้แสดงผลถี่และครอบคลุมขึ้น
                                 autoSkip: true
                             }
                         }
