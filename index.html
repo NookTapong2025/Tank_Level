@@ -42,7 +42,7 @@
             try {
                 const response = await fetch(apiURL);
                 allData = await response.json();
-                renderChart(filterData('day')); // ค่าเริ่มต้นแสดงรายวัน
+                renderChart(filterData('day')); 
             } catch (error) {
                 console.error('Error loading data:', error);
             }
@@ -55,20 +55,17 @@
             let filtered = [];
 
             if (range === 'hour') {
-                // ข้อมูลย้อนหลัง 1 ชั่วโมงล่าสุด
                 const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
                 filtered = allData.filter(row => new Date(row.timestamp) >= oneHourAgo);
             } else if (range === 'day') {
-                // ข้อมูลย้อนหลัง 24 ชั่วโมงล่าสุด
                 const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
                 filtered = allData.filter(row => new Date(row.timestamp) >= oneDayAgo);
             } else if (range === 'month') {
-                // ข้อมูลย้อนหลัง 30 วันล่าสุด
                 const oneMonthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
                 filtered = allData.filter(row => new Date(row.timestamp) >= oneMonthAgo);
             }
 
-            return filtered.length > 0 ? filtered : allData; // ถ้าช่วงเวลานั้นไม่มีข้อมูล ให้แสดงทั้งหมดสำรองไว้
+            return filtered.length > 0 ? filtered : allData;
         }
 
         function updateChartRange() {
@@ -85,7 +82,7 @@
             const ctx = document.getElementById('waterChart').getContext('2d');
 
             if (myChart) {
-                myChart.destroy(); // ลบกราฟเก่าทิ้งก่อนวาดใหม่เมื่อเปลี่ยนเมนู
+                myChart.destroy();
             }
 
             myChart = new Chart(ctx, {
