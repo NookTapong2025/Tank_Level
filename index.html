@@ -124,8 +124,8 @@
                             backgroundColor: 'rgba(54, 162, 235, 0.2)',
                             borderWidth: 2,
                             tension: 0.1,
-                            pointRadius: 4,       // ขยายขนาดจุดให้เมาส์ชี้ได้ง่ายขึ้น
-                            pointHoverRadius: 7   // ขยายขนาดจุดเมื่อเอาเมาส์ไปชี้
+                            pointRadius: 5,       // ขยายขนาดจุดให้เห็นชัดเจน
+                            pointHoverRadius: 8   // ขยายขนาดเพิ่มเมื่อเอาเมาส์ชี้
                         },
                         {
                             label: 'Temperature/Value (Col C)',
@@ -134,20 +134,28 @@
                             backgroundColor: 'rgba(255, 99, 132, 0.2)',
                             borderWidth: 2,
                             tension: 0.1,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
+                            pointRadius: 5,
+                            pointHoverRadius: 8
                         }
                     ]
                 },
                 options: {
                     responsive: true,
-                    interaction: {
-                        mode: 'index',       // แสดงข้อมูลของทั้งสองเส้นพร้อมกันเมื่อชี้ในแนวตั้งเดียวกัน
-                        intersect: false     // ไม่จำเป็นต้องชี้โดนจุดเป๊ะๆ ก็แสดงป๊อปอัปได้
+                    // ตั้งค่าเพื่อให้ Tooltip ทำงานและจับตำแหน่งเมาส์ได้แม่นยำที่สุด
+                    hover: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    tooltips: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false
                     },
                     plugins: {
                         tooltip: {
-                            enabled: true    // เปิดใช้งาน Tooltip ป๊อปอัป
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false
                         }
                     },
                     scales: {
