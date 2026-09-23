@@ -78,7 +78,7 @@
     </div>
 
     <script>
-        const apiURL = 'https://script.google.com/macros/s/AKfycbwA6N6rXkds_PgmaBdvzGGa29aqwdVHhVl3_dnMNuPTMY7m-_u3MWNWnzCTVJbOPbLq/exec';
+        const apiURL = 'https://script.google.com/macros/s/AKfycby7FAsTSMwaX8ECVsBSajhHp6HioSV2m5ZVSkcVf9vrZ6I3AT5HfFLOmmffgLnQQCZB/exec';
         let allData = [];
         let myChart = null;
 
@@ -127,8 +127,7 @@
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    const rowDate = new Date(row.timestamp).toISOString().split('T')[0];
-                    return rowDate === targetDate;
+                    return row.timestamp.startsWith(targetDate);
                 });
 
             } else if (mode === 'monthly') {
@@ -137,25 +136,27 @@
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    const rowMonth = new Date(row.timestamp).toISOString().substring(0, 7);
-                    return rowMonth === targetMonth;
+                    return row.timestamp.startsWith(targetMonth);
                 });
 
             } else if (mode === 'hourly') {
-                const targetDate = document.getElementById('hourlyDate').value;
-                const hFrom = document.getElementById('hourFrom').value;
-                const hTo = document.getElementById('hourTo').value;
+                const targetDate = document.getElementById('hourlyDate').value; // เช่น "2026-09-24"
+                const hFrom = parseInt(document.getElementById('hourFrom').value); // เช่น 0
+                const hTo = parseInt(document.getElementById('hourTo').value);     // เช่น 3
                 
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
                     if (!row.timestamp) return false;
-                    const rowDateObj = new Date(row.timestamp);
-                    const rowDateStr = rowDateObj.toISOString().split('T')[0];
                     
-                    if (rowDateStr === targetDate) {
-                        const hour = rowDateObj.getHours();
-                        return hour >= parseInt(hFrom) && hour <= parseInt(hTo);
+                    // ตรวจสอบว่าขึ้นต้นด้วยวันที่เลือกหรือไม่ (เช่น "2026-09-24 02:15:00")
+                    if (row.timestamp.startsWith(targetDate)) {
+                        // ตัดเอาเฉพาะส่วนของเวลามาตรวจสอบชั่วโมงตรงๆ ป้องกันปัญหา Timezone เพี้ยน
+                        const timePart = row.timestamp.split(' ')[1]; // ได้ "02:15:00"
+                        if (!timePart) return false;
+                        const hour = parseInt(timePart.split(':')[0]); // ได้ตัวเลขชั่วโมง เช่น 2
+                        
+                        return hour >= hFrom && hour <= hTo;
                     }
                     return false;
                 });
@@ -166,11 +167,9 @@
         }
 
         function renderChart(data) {
-            // แปลงรูปแบบ timestamp ให้แสดงเฉพาะเวลา (เช่น 18:11) หรือ วันที่+เวลา แบบอ่านง่าย
             const labels = data.map(row => {
-                const dateObj = new Date(row.timestamp);
-                // แสดงผลเฉพาะ ชั่วโมง:นาที (เช่น 18:11) เพื่อให้อ่านง่ายและไม่แน่นเกินไป
-                return dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                const parts = row.timestamp.split(' ');
+                return parts.length > 1 ? parts[1].substring(0, 5) : row.timestamp; // แสดงผลเป็น HH:mm
             });
             
             const colBData = data.map(row => row.colB);
