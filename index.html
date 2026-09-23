@@ -124,8 +124,9 @@
                             backgroundColor: 'rgba(54, 162, 235, 0.2)',
                             borderWidth: 2,
                             tension: 0.1,
-                            pointRadius: 5,       // ขยายขนาดจุดให้เห็นชัดเจน
-                            pointHoverRadius: 8   // ขยายขนาดเพิ่มเมื่อเอาเมาส์ชี้
+                            pointRadius: 4,
+                            pointHoverRadius: 7,
+                            yAxisID: 'y' // ใช้สเกลแกน Y ด้านซ้าย
                         },
                         {
                             label: 'Temperature/Value (Col C)',
@@ -134,20 +135,15 @@
                             backgroundColor: 'rgba(255, 99, 132, 0.2)',
                             borderWidth: 2,
                             tension: 0.1,
-                            pointRadius: 5,
-                            pointHoverRadius: 8
+                            pointRadius: 4,
+                            pointHoverRadius: 7,
+                            yAxisID: 'y1' // แยกไปใช้สเกลแกน Y ด้านขวาอิสระ
                         }
                     ]
                 },
                 options: {
                     responsive: true,
-                    // ตั้งค่าเพื่อให้ Tooltip ทำงานและจับตำแหน่งเมาส์ได้แม่นยำที่สุด
-                    hover: {
-                        mode: 'nearest',
-                        intersect: false
-                    },
-                    tooltips: {
-                        enabled: true,
+                    interaction: {
                         mode: 'index',
                         intersect: false
                     },
@@ -159,11 +155,35 @@
                         }
                     },
                     scales: {
-                        y: { beginAtZero: false },
                         x: {
                             ticks: {
                                 maxTicksLimit: 24,
                                 autoSkip: true
+                            }
+                        },
+                        // ตั้งค่าแกน Y ด้านซ้าย (สำหรับ Water Level)
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Water Level'
+                            }
+                        },
+                        // ตั้งค่าแกน Y ด้านขวา (สำหรับ Temperature/Value คอลัมน์ C)
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: false,
+                            grid: {
+                                drawOnChartArea: false // ป้องกันเส้นตารางทับซ้อนกันรกตา
+                            },
+                            title: {
+                                display: true,
+                                text: 'Temperature / Value'
                             }
                         }
                     }
