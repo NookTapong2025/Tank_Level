@@ -9,6 +9,8 @@
     <style>
         body { font-family: sans-serif; text-align: center; background: #f4f4f9; margin: 0; padding: 20px; }
         .container { max-width: 900px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: auto; }
+        .controls { margin-bottom: 20px; }
+        select { padding: 8px 12px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; }
         canvas { width: 100% !important; height: 400px !important; }
     </style>
 </head>
@@ -16,56 +18,106 @@
 
     <div class="container">
         <h2>Water Tank Monitoring</h2>
+        
+        <!-- เมนูเลือกช่วงเวลา -->
+        <div class="controls">
+            <label for="timeRange">เลือกช่วงเวลา: </label>
+            <select id="timeRange" onchange="updateChartRange()">
+                <option value="hour">รายชั่วโมง (ล่าสุด)</option>
+                <option value="day" selected>รายวัน (24 ชม. ล่าสุด)</option>
+                <option value="month">รายเดือน (30 วันล่าสุด)</option>
+                <option value="all">ทั้งหมด</option>
+            </select>
+        </div>
+
         <canvas id="waterChart"></canvas>
     </div>
 
     <script>
-        // แทนที่ด้วย Web App URL ที่ได้จากขั้นตอนที่ 1
         const apiURL = 'https://script.google.com/macros/s/AKfycbwA6N6rXkds_PgmaBdvzGGa29aqwdVHhVl3_dnMNuPTMY7m-_u3MWNWnzCTVJbOPbLq/exec';
+        let allData = [];
+        let myChart = null;
 
         async function loadData() {
             try {
                 const response = await fetch(apiURL);
-                const data = await response.json();
-
-                const labels = data.map(row => row.timestamp);
-                const colBData = data.map(row => row.colB);
-                const colCData = data.map(row => row.colC);
-
-                const ctx = document.getElementById('waterChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'Water Level (Col B)',
-                                data: colBData,
-                                borderColor: 'rgba(54, 162, 235, 1)',
-                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                                borderWidth: 2,
-                                tension: 0.1
-                            },
-                            {
-                                label: 'Temperature/Value (Col C)',
-                                data: colCData,
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                                borderWidth: 2,
-                                tension: 0.1
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: { beginAtZero: false }
-                        }
-                    }
-                });
+                allData = await response.json();
+                renderChart(filterData('day')); // ค่าเริ่มต้นแสดงรายวัน
             } catch (error) {
                 console.error('Error loading data:', error);
             }
+        }
+
+        function filterData(range) {
+            if (range === 'all') return allData;
+
+            const now = new Date();
+            let filtered = [];
+
+            if (range === 'hour') {
+                // ข้อมูลย้อนหลัง 1 ชั่วโมงล่าสุด
+                const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+                filtered = allData.filter(row => new Date(row.timestamp) >= oneHourAgo);
+            } else if (range === 'day') {
+                // ข้อมูลย้อนหลัง 24 ชั่วโมงล่าสุด
+                const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+                filtered = allData.filter(row => new Date(row.timestamp) >= oneDayAgo);
+            } else if (range === 'month') {
+                // ข้อมูลย้อนหลัง 30 วันล่าสุด
+                const oneMonthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                filtered = allData.filter(row => new Date(row.timestamp) >= oneMonthAgo);
+            }
+
+            return filtered.length > 0 ? filtered : allData; // ถ้าช่วงเวลานั้นไม่มีข้อมูล ให้แสดงทั้งหมดสำรองไว้
+        }
+
+        function updateChartRange() {
+            const selectedRange = document.getElementById('timeRange').value;
+            const filteredData = filterData(selectedRange);
+            renderChart(filteredData);
+        }
+
+        function renderChart(data) {
+            const labels = data.map(row => row.timestamp);
+            const colBData = data.map(row => row.colB);
+            const colCData = data.map(row => row.colC);
+
+            const ctx = document.getElementById('waterChart').getContext('2d');
+
+            if (myChart) {
+                myChart.destroy(); // ลบกราฟเก่าทิ้งก่อนวาดใหม่เมื่อเปลี่ยนเมนู
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Water Level (Col B)',
+                            data: colBData,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderWidth: 2,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Temperature/Value (Col C)',
+                            data: colCData,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderWidth: 2,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: false }
+                    }
+                }
+            });
         }
 
         loadData();
