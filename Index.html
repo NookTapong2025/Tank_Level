@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Tank Log Dashboard</title>
     <!-- โหลด Chart.js -->
-    <script src="https://script.google.com/macros/s/AKfycbwA6N6rXkds_PgmaBdvzGGa29aqwdVHhVl3_dnMNuPTMY7m-_u3MWNWnzCTVJbOPbLq/exec"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #f4f4f9; margin: 0; padding: 20px; }
         .container { max-width: 900px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: auto; }
@@ -21,7 +21,7 @@
 
     <script>
         // แทนที่ด้วย Web App URL ที่ได้จากขั้นตอนที่ 1
-        const apiURL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+        const apiURL = 'https://script.google.com/macros/s/AKfycbwA6N6rXkds_PgmaBdvzGGa29aqwdVHhVl3_dnMNuPTMY7m-_u3MWNWnzCTVJbOPbLq/exec';
 
         async function loadData() {
             try {
