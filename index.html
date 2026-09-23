@@ -27,49 +27,15 @@
             <div>
                 <label for="viewMode"><strong>โหมดการแสดงผล:</strong> </label>
                 <select id="viewMode" onchange="switchViewMode()">
-                    <option value="daily">รายวัน (00:00 - 24:00)</option>
-                    <option value="monthly">รายเดือน (วันที่ 1 - สิ้นเดือน)</option>
-                    <option value="hourly">รายชั่วโมง (ระบุเวลา From - To)</option>
+                    <option value="all">แสดงข้อมูลทั้งหมดล่าสุด</option>
+                    <option value="daily">รายวัน (ตามวันที่เลือก)</option>
                 </select>
             </div>
 
             <!-- รายวัน -->
-            <div id="dailyFilter" class="filter-group active">
+            <div id="dailyFilter" class="filter-group">
                 <label>เลือกวัน:</label>
                 <input type="date" id="selectedDate">
-                <button onclick="applyFilter()">แสดงกราฟ</button>
-            </div>
-
-            <!-- รายเดือน -->
-            <div id="monthlyFilter" class="filter-group">
-                <label>เลือกเดือน:</label>
-                <input type="month" id="selectedMonth">
-                <button onclick="applyFilter()">แสดงกราฟ</button>
-            </div>
-
-            <!-- รายชั่วโมง -->
-            <div id="hourlyFilter" class="filter-group">
-                <label>วันที่:</label>
-                <input type="date" id="hourlyDate">
-                <label>ตั้งแต่:</label>
-                <select id="hourFrom">
-                    <script>
-                        for(let i=0; i<24; i++){
-                            let h = i < 10 ? '0' + i : i;
-                            document.write(`<option value="${h}">${h}:00</option>`);
-                        }
-                    </script>
-                </select>
-                <label>ถึง:</label>
-                <select id="hourTo">
-                    <script>
-                        for(let i=0; i<24; i++){
-                            let h = i < 10 ? '0' + i : i;
-                            let selected = (i === 23) ? 'selected' : '';
-                            document.write(`<option value="${h}" ${selected}>${h}:59</option>`);
-                        }
-                    </script>
-                </select>
                 <button onclick="applyFilter()">แสดงกราฟ</button>
             </div>
         </div>
@@ -84,12 +50,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
-            const currentMonth = today.substring(0, 7);
-            
             document.getElementById('selectedDate').value = today;
-            document.getElementById('selectedMonth').value = currentMonth;
-            document.getElementById('hourlyDate').value = today;
-
             loadData();
         });
 
@@ -105,96 +66,38 @@
 
         function switchViewMode() {
             const mode = document.getElementById('viewMode').value;
-            document.querySelectorAll('.filter-group').forEach(el => el.classList.remove('active'));
-            
             if (mode === 'daily') {
                 document.getElementById('dailyFilter').classList.add('active');
-            } else if (mode === 'monthly') {
-                document.getElementById('monthlyFilter').classList.add('active');
-            } else if (mode === 'hourly') {
-                document.getElementById('hourlyFilter').classList.add('active');
+            } else {
+                document.getElementById('dailyFilter').classList.remove('active');
             }
             applyFilter();
         }
 
-        // ฟังก์ชันแปลงวันที่รองรับทั้งแบบ String และ Date Object 
-        function parseToDate(ts) {
-            if (!ts) return null;
-            let d = new Date(ts);
-            if (isNaN(d.getTime())) {
-                return null;
-            }
-            return d;
-        }
-
         function applyFilter() {
             const mode = document.getElementById('viewMode').value;
-            let filtered = [];
+            let filtered = allData;
 
             if (mode === 'daily') {
-                const targetDate = document.getElementById('selectedDate').value; // "YYYY-MM-DD"
-                if (!targetDate) return;
-
-                filtered = allData.filter(row => {
-                    let d = parseToDate(row.timestamp);
-                    if (!d) return false;
-                    let y = d.getFullYear();
-                    let m = String(d.getMonth() + 1).padStart(2, '0');
-                    let day = String(d.getDate()).padStart(2, '0');
-                    let rowDateStr = `${y}-${m}-${day}`;
-                    return rowDateStr === targetDate;
-                });
-
-            } else if (mode === 'monthly') {
-                const targetMonth = document.getElementById('selectedMonth').value; // "YYYY-MM"
-                if (!targetMonth) return;
-
-                filtered = allData.filter(row => {
-                    let d = parseToDate(row.timestamp);
-                    if (!d) return false;
-                    let y = d.getFullYear();
-                    let m = String(d.getMonth() + 1).padStart(2, '0');
-                    let rowMonthStr = `${y}-${m}`;
-                    return rowMonthStr === targetMonth;
-                });
-
-            } else if (mode === 'hourly') {
-                const targetDate = document.getElementById('hourlyDate').value;
-                const hFrom = parseInt(document.getElementById('hourFrom').value);
-                const hTo = parseInt(document.getElementById('hourTo').value);
-                
-                if (!targetDate) return;
-
-                filtered = allData.filter(row => {
-                    let d = parseToDate(row.timestamp);
-                    if (!d) return false;
-                    let y = d.getFullYear();
-                    let m = String(d.getMonth() + 1).padStart(2, '0');
-                    let day = String(d.getDate()).padStart(2, '0');
-                    let rowDateStr = `${y}-${m}-${day}`;
-                    
-                    if (rowDateStr === targetDate) {
-                        let hour = d.getHours();
-                        return hour >= hFrom && hour <= hTo;
-                    }
-                    return false;
-                });
+                const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
+                if (targetDate) {
+                    filtered = allData.filter(row => {
+                        if (!row.timestamp) return false;
+                        // ตรวจสอบว่าในข้อความ timestamp มีวันที่ตรงกับที่เลือกหรือไม่
+                        return row.timestamp.toString().includes(targetDate);
+                    });
+                }
             }
-
-            // เรียงลำดับจากเก่าไปใหม่
-            filtered.sort((a, b) => parseToDate(a.timestamp) - parseToDate(b.timestamp));
 
             renderChart(filtered);
         }
 
         function renderChart(data) {
             const labels = data.map(row => {
-                let d = parseToDate(row.timestamp);
-                if (!d) return row.timestamp;
-                let h = String(d.getHours()).padStart(2, '0');
-                let m = String(d.getMinutes()).padStart(2, '0');
-                let s = String(d.getSeconds()).padStart(2, '0');
-                return `${h}:${m}:${s}`;
+                if (!row.timestamp) return '';
+                let str = row.timestamp.toString();
+                let parts = str.split(/[\sT]/);
+                return parts.length > 1 ? parts[1].substring(0, 8) : str;
             });
             
             const colBData = data.map(row => row.colB);
