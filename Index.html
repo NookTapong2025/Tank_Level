@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Tank Log Dashboard</title>
+    <!-- โหลด Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f9; margin: 0; padding: 20px; }
+        .container { max-width: 900px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: auto; }
+        canvas { width: 100% !important; height: 400px !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Water Tank Monitoring</h2>
+        <canvas id="waterChart"></canvas>
+    </div>
+
+    <script>
+        // แทนที่ด้วย Web App URL ที่ได้จากขั้นตอนที่ 1
+        const apiURL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+
+        async function loadData() {
+            try {
+                const response = await fetch(apiURL);
+                const data = await response.json();
+
+                const labels = data.map(row => row.timestamp);
+                const colBData = data.map(row => row.colB);
+                const colCData = data.map(row => row.colC);
+
+                const ctx = document.getElementById('waterChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Water Level (Col B)',
+                                data: colBData,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Temperature/Value (Col C)',
+                                data: colCData,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: false }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        loadData();
+    </script>
+
+</body>
+</html>
