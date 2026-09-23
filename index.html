@@ -77,9 +77,8 @@
                 return timeA.localeCompare(timeB);
             });
 
-            // 3. จัดกลุ่มข้อมูลให้เหลือ 1 ค่าต่อทุกๆ ช่วง 15 นาทีเป๊ะๆ (นาทีที่ 0, 15, 30, 45)
-            let sampledData = [];
-            let lastBucketKey = "";
+            // 3. จัดกลุ่มข้อมูลล็อกช่วงเวลาทุกๆ 15 นาทีเป๊ะๆ (00, 15, 30, 45)
+            let sampledMap = new Map();
 
             filtered.forEach(row => {
                 let timePart = row.timestamp.toString().split(/[\sT]/)[1];
@@ -88,24 +87,23 @@
                     let hour = parseInt(timeSub[0]) || 0;
                     let minute = parseInt(timeSub[1]) || 0;
                     
-                    // ปัดเศษนาทีลงให้ลงล็อก 15 นาที (เช่น 07, 12 จะถูกจัดเข้ากลุ่ม 00 เหมือนกัน)
+                    // คำนวณช่วงบล็อก 15 นาที
                     let roundedMinute = Math.floor(minute / 15) * 15;
                     let hStr = hour < 10 ? '0' + hour : hour;
                     let mStr = roundedMinute < 10 ? '0' + roundedMinute : roundedMinute;
                     
                     let bucketKey = `${hStr}:${mStr}`;
 
-                    // เก็บข้อมูลตัวแรกของแต่ละช่วง 15 นาที
-                    if (bucketKey !== lastBucketKey) {
-                        sampledData.push({
-                            ...row,
-                            // กำหนด Label เวลาให้แสดงเป็นช่วง 15 นาทีสวยๆ (เช่น 00:00, 00:15)
-                            displayTime: `${bucketKey}:00`
-                        });
-                        lastBucketKey = bucketKey;
-                    }
+                    // บันทึกเฉพาะค่าแรกที่เจอในแต่ละช่วง 15 นาที หรือทับด้วยค่าล่าสุดของช่วงนั้น
+                    sampledMap.set(bucketKey, {
+                        ...row,
+                        displayTime: `${bucketKey}`
+                    });
                 }
             });
+
+            // แปลง Map กลับเป็น Array
+            let sampledData = Array.from(sampledMap.values());
 
             renderChart(sampledData);
         }
@@ -150,7 +148,7 @@
                         y: { beginAtZero: false },
                         x: {
                             ticks: {
-                                maxTicksLimit: 24, // ให้แสดงป้ายชื่อบนแกน X ถี่ขึ้นเพื่อให้เห็นช่วงเวลา 15 นาทีชัดเจน
+                                maxTicksLimit: 24, // แสดงป้ายแกน X ให้ครบถ้วนและอ่านง่าย
                                 autoSkip: true
                             }
                         }
