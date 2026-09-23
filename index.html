@@ -34,7 +34,7 @@
             </div>
 
             <!-- รายวัน -->
-            <div id="dailyFilter" class="filter-group">
+            <div id="dailyFilter" class="filter-group active">
                 <label>เลือกวัน:</label>
                 <input type="date" id="selectedDate">
                 <button onclick="applyFilter()">แสดงกราฟ</button>
@@ -48,7 +48,7 @@
             </div>
 
             <!-- รายชั่วโมง -->
-            <div id="hourlyFilter" class="filter-group active">
+            <div id="hourlyFilter" class="filter-group">
                 <label>วันที่:</label>
                 <input type="date" id="hourlyDate">
                 <label>ตั้งแต่:</label>
@@ -78,7 +78,7 @@
     </div>
 
     <script>
-        // ใช้ Web App URL ล่าสุด
+        // ใช้ Web App URL ล่าสุดของคุณ
         const apiURL = 'https://script.google.com/macros/s/AKfycbwdh-YQHh5GOmwHGz7wUs-SGYYFmv3c7ojpHF2oE5bGLSRXNBprBCYv-DxSCaY9lSMJ/exec';
         let allData = [];
         let myChart = null;
@@ -118,30 +118,28 @@
             applyFilter();
         }
 
-        // ฟังก์ชันช่วยดึงและแปลงวันที่จากข้อความ Timestamp ของ Google Sheet อย่างแม่นยำ
-        function parseRowDate(timestampStr) {
-            if (!timestampStr) return null;
-            // ตัวอย่างรูปแบบที่รับ: "2026-09-23 18:00:00" หรือ ISO string
-            let parts = timestampStr.toString().split(' ');
-            if (parts.length >= 1) {
-                let datePart = parts[0].split('T')[0]; // ได้ "2026-09-23"
-                let timePart = parts[1] ? parts[1].split('.')[0] : "00:00:00"; // ได้ "18:00:00"
-                
-                let dateSub = datePart.split('-');
-                if (dateSub.length === 3) {
-                    let year = parseInt(dateSub[0]);
-                    let month = parseInt(dateSub[1]) - 1;
-                    let day = parseInt(dateSub[2]);
-
-                    let timeSub = timePart.split(':');
-                    let hour = timeSub[0] ? parseInt(timeSub[0]) : 0;
-                    let minute = timeSub[1] ? parseInt(timeSub[1]) : 0;
-                    let second = timeSub[2] ? parseInt(timeSub[2]) : 0;
-
-                    return new Date(year, month, day, hour, minute, second);
+        // ฟังก์ชันดึงวันที่และเวลาจากข้อความ Timestamp แบบตัดปัญหา Timezone
+        function extractDateTime(tsStr) {
+            if (!tsStr) return null;
+            let str = tsStr.toString().trim();
+            // รองรับรูปแบบ "YYYY-MM-DD HH:mm:ss" หรือ ISO "YYYY-MM-DDTHH:mm:ss..."
+            let parts = str.split(/[\sT]/);
+            if (parts.length >= 2) {
+                let dateParts = parts[0].split('-');
+                let timeParts = parts[1].split(':');
+                if (dateParts.length === 3 && timeParts.length >= 2) {
+                    return {
+                        dateStr: parts[0], // "YYYY-MM-DD"
+                        year: parseInt(dateParts[0]),
+                        month: parseInt(dateParts[1]),
+                        day: parseInt(dateParts[2]),
+                        hour: parseInt(timeParts[0]),
+                        minute: parseInt(timeParts[1]),
+                        timeStr: parts[1].substring(0, 8)
+                    };
                 }
             }
-            return new Date(timestampStr);
+            return null;
         }
 
         function applyFilter() {
@@ -153,12 +151,9 @@
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    const d = parseRowDate(row.timestamp);
-                    if (!d || isNaN(d.getTime())) return false;
-                    const rowDateStr = d.getFullYear() + '-' + 
-                                       String(d.getMonth() + 1).padStart(2, '0') + '-' + 
-                                       String(d.getDate()).padStart(2, '0');
-                    return rowDateStr === targetDate;
+                    let dt = extractDateTime(row.timestamp);
+                    if (!dt) return false;
+                    return dt.dateStr === targetDate;
                 });
 
             } else if (mode === 'monthly') {
@@ -166,9 +161,9 @@
                 if (!targetMonth) return;
 
                 filtered = allData.filter(row => {
-                    const d = parseRowDate(row.timestamp);
-                    if (!d || isNaN(d.getTime())) return false;
-                    const rowMonthStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                    let dt = extractDateTime(row.timestamp);
+                    if (!dt) return false;
+                    let rowMonthStr = dt.year + '-' + String(dt.month).padStart(2, '0');
                     return rowMonthStr === targetMonth;
                 });
 
@@ -180,33 +175,30 @@
                 if (!targetDate) return;
 
                 filtered = allData.filter(row => {
-                    const d = parseRowDate(row.timestamp);
-                    if (!d || isNaN(d.getTime())) return false;
+                    let dt = extractDateTime(row.timestamp);
+                    if (!dt) return false;
 
-                    const rowDateStr = d.getFullYear() + '-' + 
-                                       String(d.getMonth() + 1).padStart(2, '0') + '-' + 
-                                       String(d.getDate()).padStart(2, '0');
-                                       
-                    if (rowDateStr === targetDate) {
-                        const hour = d.getHours();
-                        return hour >= hFrom && hour <= hTo;
+                    if (dt.dateStr === targetDate) {
+                        return dt.hour >= hFrom && dt.hour <= hTo;
                     }
                     return false;
                 });
             }
 
-            filtered.sort((a, b) => parseRowDate(a.timestamp) - parseRowDate(b.timestamp));
+            // เรียงลำดับข้อมูลตามเวลา
+            filtered.sort((a, b) => {
+                let dtA = extractDateTime(a.timestamp);
+                let dtB = extractDateTime(b.timestamp);
+                return (dtA && dtB) ? (new Date(a.timestamp) - new Date(b.timestamp)) : 0;
+            });
+
             renderChart(filtered);
         }
 
         function renderChart(data) {
             const labels = data.map(row => {
-                if (!row.timestamp) return '';
-                const parts = row.timestamp.toString().split(' ');
-                if (parts.length > 1) {
-                    return parts[1].substring(0, 8); // แสดงเฉพาะ HH:mm:ss
-                }
-                return row.timestamp;
+                let dt = extractDateTime(row.timestamp);
+                return dt ? dt.timeStr : row.timestamp;
             });
             
             const colBData = data.map(row => row.colB);
