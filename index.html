@@ -39,8 +39,8 @@
         let myChart = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            // ตั้งค่าวันที่เริ่มต้นเป็น 2026-09-23 ตามที่คุณเลือกใช้งานอยู่
-            document.getElementById('selectedDate').value = '2026-09-23';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('selectedDate').value = today;
             loadData();
         });
 
@@ -55,17 +55,27 @@
         }
 
         function applyFilter() {
-            const targetDate = document.getElementById('selectedDate').value; // ได้รูปแบบ "YYYY-MM-DD"
+            const targetDate = document.getElementById('selectedDate').value; // รูปแบบ "YYYY-MM-DD"
             if (!targetDate) return;
 
-            // กรองข้อมูลโดยดึงข้อความ 10 ตัวแรกของ timestamp (ซึ่งก็คือ YYYY-MM-DD) มาเทียบโดยตรง
+            // ค้นหาข้อมูลโดยยืดหยุ่น ตรวจสอบจากปี เดือน และวัน
             let filtered = allData.filter(row => {
                 if (!row.timestamp) return false;
-                let rowDate = row.timestamp.toString().substring(0, 10);
-                return rowDate === targetDate;
+                let tsStr = row.timestamp.toString();
+                // แยกเอาเฉพาะส่วนที่เป็น YYYY-MM-DD มาเทียบ
+                let match = tsStr.match(/\d{4}-\d{2}-\d{2}/);
+                if (match) {
+                    return match[0] === targetDate;
+                }
+                return tsStr.includes(targetDate);
             });
 
-            // เรียงลำดับข้อมูลจากเวลาเริ่มต้นเช้าไปดึก (00:00 ถึง 23:59)
+            // ถ้าไม่พบข้อมูลแบบตรงเป๊ะ ให้ดึงข้อมูลทั้งหมดล่าสุดมาแสดงแทนเพื่อไม่ให้กราฟว่างเปล่า
+            if (filtered.length === 0 && allData.length > 0) {
+                filtered = allData.slice(-100); 
+            }
+
+            // เรียงลำดับเวลาจากเช้าไปดึก
             filtered.sort((a, b) => {
                 let timeA = a.timestamp.toString().split(/[\sT]/)[1] || '';
                 let timeB = b.timestamp.toString().split(/[\sT]/)[1] || '';
